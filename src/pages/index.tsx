@@ -44,8 +44,9 @@ const HomePage: NextPage = () => {
   })
   const eventsQuery = trpc.gcal.listEvents.useQuery(
     {
-      timeMin: today.toDate(),
+      timeMin: dayjs().startOf('hour').toDate(),
       timeMax: today.add(1, 'day').endOf('day').toDate(),
+      maxResults: 3,
     },
     { refetchInterval: 1000 * 60 * 15 /* 15 minutes */ }
   )
@@ -214,9 +215,13 @@ const HomePage: NextPage = () => {
                         label={
                           oneHourToEventStart(event.start?.dateTime)
                             ? 'Click to join meeting'
-                            : 'Button will be enabled 1 hour before the event starts'
+                            : 'Too early to join'
                         }
-                        color="cyan"
+                        color={
+                          oneHourToEventStart(event.start?.dateTime)
+                            ? 'cyan'
+                            : 'red'
+                        }
                         position="top-end"
                         withArrow={true}
                       >
@@ -245,7 +250,7 @@ const HomePage: NextPage = () => {
       </Container>
 
       {quoteQuery.data && (
-        <div className="absolute bottom-0 flex flex-col p-4 w-screen">
+        <Paper className="absolute bottom-0 flex flex-col p-4 w-screen">
           <Text
             variant="gradient"
             gradient={styles.gradients.primary}
@@ -261,7 +266,7 @@ const HomePage: NextPage = () => {
           >
             — <em>{quoteQuery.data[0].a}</em>
           </Text>
-        </div>
+        </Paper>
       )}
     </>
   )

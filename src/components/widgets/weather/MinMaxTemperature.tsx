@@ -1,10 +1,7 @@
 import { integerFormatter } from '@/utils'
-import { Text, type DefaultMantineColor } from '@mantine/core'
-import {
-  IconArrowDown,
-  IconArrowUp,
-  type TablerIconsProps,
-} from '@tabler/icons-react'
+import { Text } from '@mantine/core'
+import { IconArrowDown, IconArrowUp } from '@tabler/icons-react'
+import { useMemo } from 'react'
 
 export type MinMaxTemperatureProps = {
   kind: 'min' | 'max'
@@ -12,28 +9,20 @@ export type MinMaxTemperatureProps = {
 }
 
 export function MinMaxTemperature({ kind, value }: MinMaxTemperatureProps) {
-  const Icon = kindMap[kind].icon
+  const { color, icon: Icon } = useMemo(
+    () =>
+      ({
+        min: { color: 'cyan', icon: IconArrowDown },
+        max: { color: 'orange', icon: IconArrowUp },
+      }[kind]),
+    [kind]
+  )
 
   return (
-    <Text
-      color={kindMap[kind].color}
-      className="flex items-center gap-0.5 font-bold"
-    >
-      <Icon
-        size={16}
-        stroke={3}
-        className={`text-${kindMap[kind].color}-500`}
-      />
+    <Text color={color} className="flex items-center gap-0.5 font-bold">
+      <Icon size={16} stroke={3} className={`text-${color}-500`} />
 
       {integerFormatter.format(value)}
     </Text>
   )
 }
-
-const kindMap = {
-  min: { color: 'cyan', icon: IconArrowDown },
-  max: { color: 'orange', icon: IconArrowUp },
-} as const satisfies Record<
-  MinMaxTemperatureProps['kind'],
-  { color: DefaultMantineColor; icon: (props: TablerIconsProps) => JSX.Element }
->
