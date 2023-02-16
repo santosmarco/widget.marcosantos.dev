@@ -13,6 +13,12 @@ const gradients = {
     deg: 60,
   },
 
+  success: {
+    from: 'teal',
+    to: 'lime',
+    deg: 105,
+  },
+
   danger: {
     from: 'orange',
     to: 'red',

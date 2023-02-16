@@ -1,9 +1,23 @@
-import { Widget } from '@/components'
+import {
+  DimmedText,
+  MinMaxTemperature,
+  Widget,
+  WidgetHighlight,
+} from '@/components'
 import { styles } from '@/styles'
 import { integerFormatter, stringFormatter, trpc } from '@/utils'
-import { Button, Container, Paper, Space, Text, TextInput } from '@mantine/core'
+import {
+  Badge,
+  Button,
+  Container,
+  Paper,
+  Space,
+  Text,
+  TextInput,
+  Tooltip,
+} from '@mantine/core'
 import { useInterval } from '@mantine/hooks'
-import { IconArrowDown, IconArrowUp, IconSearch } from '@tabler/icons-react'
+import { IconSearch } from '@tabler/icons-react'
 import dayjs from 'dayjs'
 import type { NextPage } from 'next'
 import Image from 'next/image'
@@ -11,7 +25,13 @@ import { useCallback, useEffect, useState } from 'react'
 
 const HomePage: NextPage = () => {
   const [now, setNow] = useState(dayjs())
+  const [today, setToday] = useState(dayjs().startOf('day'))
+
   const nowInterval = useInterval(() => setNow(dayjs()), 1000)
+  const todayInterval = useInterval(
+    () => setToday(dayjs().startOf('day')),
+    dayjs().endOf('day').diff(dayjs())
+  )
 
   const [search, setSearch] = useState('')
 
@@ -19,10 +39,16 @@ const HomePage: NextPage = () => {
     { city: 'Rio de Janeiro' },
     { refetchInterval: 1000 * 60 * 15 /* 15 minutes */ }
   )
-
   const quoteQuery = trpc.quotes.getRandom.useQuery(undefined, {
     refetchInterval: 1000 * 60 * 60 * 24 /* 24 hours */,
   })
+  const eventsQuery = trpc.gcal.listEvents.useQuery(
+    {
+      timeMin: today.toDate(),
+      timeMax: today.add(1, 'day').endOf('day').toDate(),
+    },
+    { refetchInterval: 1000 * 60 * 15 /* 15 minutes */ }
+  )
 
   const handleSearchChange = useCallback(
     (ev: { target: { value: string } }) => {
@@ -44,6 +70,13 @@ const HomePage: NextPage = () => {
     return nowInterval.stop
   }, [nowInterval])
 
+  useEffect(() => {
+    todayInterval.start()
+    return todayInterval.stop
+  }, [todayInterval])
+
+  console.log({ eventsQuery })
+
   return (
     <>
       <Container className="pt-4">
@@ -52,7 +85,7 @@ const HomePage: NextPage = () => {
             {now.format('dddd, D MMMM')}
           </Text>
 
-          <Text color="dimmed">{weatherQuery.data?.name}</Text>
+          <DimmedText>{weatherQuery.data?.name}</DimmedText>
         </div>
 
         <Text
@@ -90,91 +123,124 @@ const HomePage: NextPage = () => {
 
         <Space h="xl" />
 
-        <Widget>
-          <Text className={styles.colors.text.primary}>
-            It&rsquo;s now
-            <br />
-            <Text
-              variant="gradient"
-              gradient={styles.gradients.secondary}
-              className="text-3xl font-bold"
-            >
-              {now.format('h:mm A')}
-            </Text>
-          </Text>
+        <Widget title={<>It&rsquo;s now</>}>
+          <WidgetHighlight>{now.format('h:mm A')}</WidgetHighlight>
         </Widget>
 
         <Space h="md" />
 
-        <Widget loading={weatherQuery.isLoading}>
+        <Widget
+          title={<>It&rsquo;s currently</>}
+          loading={weatherQuery.isLoading}
+        >
           {weatherQuery.data && (
             <>
               <div className="flex items-start justify-between">
-                <Text className={styles.colors.text.primary}>
-                  <div>It&rsquo;s currently</div>
-
-                  <div className="flex items-end gap-2">
-                    <Text
-                      variant="gradient"
-                      gradient={styles.gradients.secondary}
-                      className="text-3xl font-bold"
-                    >
-                      {integerFormatter.format(
-                        weatherQuery.data.main.feels_like
-                      )}
-                      °C
-                    </Text>
-                  </div>
-                </Text>
+                <WidgetHighlight>
+                  {integerFormatter.format(weatherQuery.data.main.feels_like)}
+                  °C
+                </WidgetHighlight>
 
                 <Image
                   src={`http://openweathermap.org/img/wn/${weatherQuery.data.weather[0].icon}@2x.png`}
                   alt={`Weather icon for ${weatherQuery.data.weather[0].description}`}
                   width={64}
                   height={64}
-                  className="-mr-2"
+                  className="-mt-8 -mr-2"
                 />
               </div>
 
               <div className="flex items-center justify-between">
-                <Text color="dimmed">
+                <DimmedText>
                   {stringFormatter.capitalize(
                     weatherQuery.data.weather[0].description
                   )}
-                </Text>
+                </DimmedText>
 
                 <div className="flex items-center gap-1">
-                  <Text
-                    color="cyan"
-                    className="flex items-center gap-0.5 font-bold"
-                  >
-                    <IconArrowDown
-                      size={16}
-                      stroke={3}
-                      className="text-cyan-500"
-                    />
-                    <span>
-                      {integerFormatter.format(weatherQuery.data.main.temp_min)}
-                    </span>
-                  </Text>
-
-                  <Text
-                    color="orange"
-                    className="flex items-center gap-0.5 font-bold"
-                  >
-                    <IconArrowUp
-                      size={16}
-                      stroke={3}
-                      className="text-orange-500"
-                    />
-                    <span>
-                      {integerFormatter.format(weatherQuery.data.main.temp_max)}
-                    </span>
-                  </Text>
+                  <MinMaxTemperature
+                    kind="min"
+                    value={weatherQuery.data.main.temp_min}
+                  />
+                  <MinMaxTemperature
+                    kind="max"
+                    value={weatherQuery.data.main.temp_max}
+                  />
                 </div>
               </div>
             </>
           )}
+        </Widget>
+
+        <Space h="md" />
+
+        <Widget title="Upcoming events" loading={eventsQuery.isLoading}>
+          {eventsQuery.data &&
+            (eventsQuery.data.length <= 0 ? (
+              <WidgetHighlight size="lg">No events today</WidgetHighlight>
+            ) : (
+              <div className="flex flex-col mt-0.5">
+                {eventsQuery.data.map(event => (
+                  <div key={event.id}>
+                    <Badge
+                      variant="gradient"
+                      gradient={
+                        styles.gradients[
+                          isToday(dayjs(event.start?.dateTime))
+                            ? 'secondary'
+                            : 'primary'
+                        ]
+                      }
+                      size="xs"
+                    >
+                      {event.start?.dateTime &&
+                      isToday(dayjs(event.start.dateTime))
+                        ? 'Today'
+                        : 'Tomorrow'}{' '}
+                      •{' '}
+                      {event.start?.dateTime
+                        ? dayjs(event.start.dateTime).format('h:mm A')
+                        : 'All day'}
+                    </Badge>
+
+                    <div className="flex justify-between gap-4">
+                      <Text className={styles.colors.text.primary}>
+                        {event.organizer?.email === 'marco.santos@g2i.co'
+                          ? 'G2i Interview'
+                          : event.summary}
+                      </Text>
+
+                      <Tooltip
+                        label={
+                          oneHourToEventStart(event.start?.dateTime)
+                            ? 'Click to join meeting'
+                            : 'Button will be enabled 1 hour before the event starts'
+                        }
+                        color="cyan"
+                        position="top-end"
+                        withArrow={true}
+                      >
+                        <div className="ml-auto">
+                          <Button
+                            variant="gradient"
+                            gradient={styles.gradients.success}
+                            onClick={() =>
+                              event.location && window.open(event.location)
+                            }
+                            compact={true}
+                            disabled={
+                              !oneHourToEventStart(event.start?.dateTime)
+                            }
+                          >
+                            Go
+                          </Button>
+                        </div>
+                      </Tooltip>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
         </Widget>
       </Container>
 
@@ -201,7 +267,7 @@ const HomePage: NextPage = () => {
   )
 }
 
-const getTimeOfDay = (date: dayjs.Dayjs) => {
+function getTimeOfDay(date: dayjs.Dayjs) {
   const hour = date.hour()
 
   if (hour < 12) {
@@ -211,6 +277,18 @@ const getTimeOfDay = (date: dayjs.Dayjs) => {
   } else {
     return 'evening'
   }
+}
+
+function isToday(date: dayjs.Dayjs) {
+  return date.isSame(dayjs(), 'day')
+}
+
+function oneHourToEventStart(startDate: string | null | undefined) {
+  if (!startDate) {
+    return false
+  }
+
+  return dayjs(startDate).diff(dayjs(), 'hour') <= 1
 }
 
 export default HomePage
