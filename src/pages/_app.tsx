@@ -1,6 +1,30 @@
+import { CustomFonts, styles } from '@/styles'
 import '@/styles/globals.css'
-import type { AppProps } from 'next/app'
+import { trpc } from '@/utils/trpc'
+import { MantineProvider, type MantineThemeOverride } from '@mantine/core'
+import type { AppType } from 'next/app'
+import { QueryClient, QueryClientProvider } from 'react-query'
 
-export default function App({ Component, pageProps }: AppProps) {
-  return <Component {...pageProps} />
+const queryClient = new QueryClient()
+
+const App: AppType = ({ Component, pageProps }) => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <MantineProvider
+        withGlobalStyles={true}
+        withNormalizeCSS={true}
+        theme={theme}
+      >
+        <CustomFonts />
+        <Component {...pageProps} />
+      </MantineProvider>
+    </QueryClientProvider>
+  )
 }
+
+const theme = {
+  colorScheme: styles.colors.scheme,
+  fontFamily: styles.fonts.body,
+} as const satisfies MantineThemeOverride
+
+export default trpc.withTRPC(App)
