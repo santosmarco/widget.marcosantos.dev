@@ -1,3 +1,4 @@
+import dayjs from 'dayjs'
 import { nanoid } from 'nanoid'
 import { z } from 'zod'
 import { publicProcedure, router } from '../trpc'
@@ -16,8 +17,9 @@ export const todosRouter = router({
     return [
       {
         id: '1',
-        text: 'Todo 1',
+        text: 'Todo 1Todo 1Todo 1Todo 1Todo 1Todo 1Todo 1Todo 1Todo 1Todo 1Todo 1Todo 1Todo 1Todo 1Todo 1Todo 1Todo 1Todo 1Todo 1',
         completed: false,
+        dueDate: dayjs().add(1, 'day').toDate(),
       },
       {
         id: '2',
@@ -32,23 +34,14 @@ export const todosRouter = router({
     ]
   }),
 
-  getPending: publicProcedure.output(z.array(TodoSchema)).query(async () => {
-    return [
-      {
-        id: '1',
-        text: 'Todo 1',
-        completed: false,
-      },
-      {
-        id: '2',
-        text: 'Todo 2',
-        completed: false,
-      },
-      {
-        id: '3',
-        text: 'Todo 3',
-        completed: false,
-      },
-    ]
-  }),
+  setCompleteness: publicProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        completed: z.boolean(),
+      })
+    )
+    .mutation(async ({ input: { id, completed } }) => {
+      console.log(id, completed)
+    }),
 })

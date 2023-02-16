@@ -1,29 +1,28 @@
-import {
-  DimmedText,
-  MinMaxTemperature,
-  TodoCounter,
-  Widget,
-  WidgetHighlight,
-} from '@/components'
+import { TodoCounter } from '@/components'
 import { Todo } from '@/server/routers/todos'
 import { styles } from '@/styles'
-import { integerFormatter, stringFormatter, trpc } from '@/utils'
+import { trpc } from '@/utils'
 import {
-  Badge,
+  ActionIcon,
   Button,
+  Checkbox,
   Container,
   Paper,
   Space,
   Text,
-  TextInput,
   Tooltip,
 } from '@mantine/core'
 import { useInterval } from '@mantine/hooks'
-import { IconCirclePlus, IconSearch } from '@tabler/icons-react'
+import {
+  IconCirclePlus,
+  IconClock,
+  IconPencil,
+  IconSettings,
+  IconTrash,
+} from '@tabler/icons-react'
+import cn from 'classnames'
 import dayjs from 'dayjs'
 import type { NextPage } from 'next'
-import Image from 'next/image'
-import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 const NotesPage: NextPage = () => {
@@ -39,10 +38,15 @@ const NotesPage: NextPage = () => {
   const [search, setSearch] = useState('')
 
   const todosQuery = trpc.todos.getAll.useQuery()
+  const todosSetCompletenessMutation = trpc.todos.setCompleteness.useMutation()
 
-  const { delayed, pending, completed } = useMemo(() => {
+  const {
+    overdue: overdue,
+    pending,
+    completed,
+  } = useMemo(() => {
     return (todosQuery?.data ?? []).reduce<{
-      delayed: Todo[]
+      overdue: Todo[]
       pending: Todo[]
       completed: Todo[]
     }>(
@@ -50,22 +54,24 @@ const NotesPage: NextPage = () => {
         if (todo.completed) {
           acc.completed.push(todo)
         } else if (todo.dueDate && dayjs(todo.dueDate).isBefore(now)) {
-          acc.delayed.push(todo)
+          acc.overdue.push(todo)
         } else {
           acc.pending.push(todo)
         }
         return acc
       },
-      { delayed: [], pending: [], completed: [] }
+      { overdue: [], pending: [], completed: [] }
     )
   }, [todosQuery?.data, now])
 
-  const handleSearchChange = useCallback(
-    (ev: { target: { value: string } }) => {
-      setSearch(ev.target.value)
-    },
-    []
-  )
+  const handleSetCompleteness = useCallback((id: string) => {
+    return (ev: { currentTarget: { checked: boolean } }) => {
+      todosSetCompletenessMutation.mutateAsync({
+        id,
+        completed: ev.currentTarget.checked,
+      })
+    }
+  }, [])
 
   const handleSearchSubmit = useCallback(
     (ev: { preventDefault?: () => void }) => {
@@ -104,10 +110,10 @@ const NotesPage: NextPage = () => {
 
         {todosQuery.data && (
           <>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 h-8">
               <TodoCounter
-                count={delayed.length}
-                label="delayed"
+                count={overdue.length}
+                label="overdue"
                 gradient={styles.gradients.danger}
               />
               <TodoCounter
@@ -123,6 +129,68 @@ const NotesPage: NextPage = () => {
             </div>
 
             <Space h="xs" />
+
+            {todosQuery.data
+              .sort((a, b) => {
+                if (a.completed && !b.completed) {
+                  return 1
+                } else if (!a.completed && b.completed) {
+                  return -1
+                } else if (a.dueDate && !b.dueDate) {
+                  return -1
+                } else if (!a.dueDate && b.dueDate) {
+                  return 1
+                } else if (a.dueDate && b.dueDate) {
+                  return dayjs(a.dueDate).diff(dayjs(b.dueDate))
+                } else {
+                  return 0
+                }
+              })
+              .map(todo => (
+                <Paper
+                  key={todo.id}
+                  shadow="lg"
+                  className="flex items-start justify-between gap-4 p-4 mb-2"
+                  withBorder={true}
+                >
+                  <Checkbox
+                    label={
+                      <>
+                        <div
+                          className={cn(
+                            styles.colors.text.primary,
+                            todo.completed && 'line-through'
+                          )}
+                        >
+                          {todo.text}
+                        </div>
+
+                        {todo.dueDate && (
+                          <strong
+                            className={cn(
+                              'flex items-center gap-1 mt-1',
+                              dayjs(todo.dueDate).diff(dayjs(), 'day') <= 0 &&
+                                'text-red-500'
+                            )}
+                          >
+                            <IconClock size={12} /> Due{' '}
+                            {dayjs(todo.dueDate).fromNow()}
+                          </strong>
+                        )}
+                      </>
+                    }
+                    checked={todo.completed}
+                    onChange={handleSetCompleteness(todo.id)}
+                    color={todo.completed ? 'green' : 'cyan'}
+                    size="xs"
+                    radius="xl"
+                  />
+
+                  <ActionIcon variant="subtle" className="-mt-1.5 -mr-1.5">
+                    <IconPencil size={16} />
+                  </ActionIcon>
+                </Paper>
+              ))}
           </>
         )}
       </Container>
