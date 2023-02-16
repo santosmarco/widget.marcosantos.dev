@@ -21,6 +21,7 @@ import { IconSearch } from '@tabler/icons-react'
 import dayjs from 'dayjs'
 import type { NextPage } from 'next'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 
 const HomePage: NextPage = () => {
@@ -76,8 +77,6 @@ const HomePage: NextPage = () => {
     return todayInterval.stop
   }, [todayInterval])
 
-  console.log({ eventsQuery })
-
   return (
     <>
       <Container className="pt-4">
@@ -105,16 +104,17 @@ const HomePage: NextPage = () => {
               placeholder="Search Google"
               icon={<IconSearch size={14} />}
               rightSection={
-                <Button
-                  type="submit"
-                  variant="gradient"
-                  gradient={styles.gradients.primary}
-                  className="mr-9"
-                  onClick={handleSearchSubmit}
-                  compact={true}
-                >
-                  Search
-                </Button>
+                <Link href={`https://google.com/search?q=${search}`}>
+                  <Button
+                    type="submit"
+                    variant="gradient"
+                    gradient={styles.gradients.primary}
+                    className="mr-9"
+                    compact={true}
+                  >
+                    Search
+                  </Button>
+                </Link>
               }
               value={search}
               onChange={handleSearchChange}
@@ -133,6 +133,7 @@ const HomePage: NextPage = () => {
         <Widget
           title={<>It&rsquo;s currently</>}
           loading={weatherQuery.isLoading}
+          hidden={!weatherQuery.data}
         >
           {weatherQuery.data && (
             <>
@@ -175,7 +176,11 @@ const HomePage: NextPage = () => {
 
         <Space h="md" />
 
-        <Widget title="Upcoming events" loading={eventsQuery.isLoading}>
+        <Widget
+          title="Upcoming events"
+          loading={eventsQuery.isLoading}
+          hidden={!eventsQuery.data}
+        >
           {eventsQuery.data &&
             (eventsQuery.data.length <= 0 ? (
               <WidgetHighlight size="lg">No events today</WidgetHighlight>

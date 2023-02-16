@@ -5,30 +5,36 @@ import cn from 'classnames'
 export type WidgetProps = {
   title?: React.ReactNode
   loading?: boolean
+  hidden?: boolean
 }
 
 export function Widget({
   title,
   loading,
+  hidden,
   children,
 }: React.PropsWithChildren<WidgetProps>) {
   return (
-    <Card
-      shadow="sm"
-      radius="md"
-      className={cn(loading && 'flex items-center justify-center')}
-    >
-      {loading ? (
-        <Loader />
-      ) : (
-        <Card.Section className="px-3 pt-2 pb-5">
-          {title && (
-            <Text className={cn(styles.colors.text.primary)}>{title}</Text>
-          )}
+    <>
+      {!hidden && (
+        <Card
+          shadow="sm"
+          radius="md"
+          className={cn(loading && 'flex items-center justify-center')}
+        >
+          {loading ? (
+            <Loader />
+          ) : (
+            <Card.Section className="px-3 pt-2 pb-5">
+              {title && (
+                <Text className={cn(styles.colors.text.primary)}>{title}</Text>
+              )}
 
-          {children}
-        </Card.Section>
+              {children}
+            </Card.Section>
+          )}
+        </Card>
       )}
-    </Card>
+    </>
   )
 }

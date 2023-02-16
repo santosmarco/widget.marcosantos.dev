@@ -45,14 +45,6 @@ export const trpc = createTRPCNext<AppRouter, SSRContext>({
           },
         }),
       ],
-
-      queryClientConfig: {
-        defaultOptions: {
-          queries: {
-            staleTime: 60,
-          },
-        },
-      },
     }
   },
 
