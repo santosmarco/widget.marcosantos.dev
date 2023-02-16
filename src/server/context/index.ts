@@ -1,6 +1,7 @@
 import type { GoogleAuth } from '@/lib/gcal'
 import type { calendar_v3 } from 'googleapis'
-import type { RequireAllOrNone } from 'type-fest'
+
+type RequireAllOrNone<T> = T | { [K in keyof T]?: never }
 
 export type TRPCContextBase = unknown
 
