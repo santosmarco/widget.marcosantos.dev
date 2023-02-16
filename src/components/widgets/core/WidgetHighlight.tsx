@@ -6,14 +6,14 @@ export type WidgetHighlightProps = {
 }
 
 export function WidgetHighlight({
-  size = 'xl',
+  size,
   children,
 }: React.PropsWithChildren<WidgetHighlightProps>) {
   return (
     <Text
       variant="gradient"
       gradient={styles.gradients.secondary}
-      className={`text-${size === 'xl' ? '3xl' : size} font-bold`}
+      className={`text-${size === 'lg' ? 'lg' : '3xl'} font-bold`}
     >
       {children}
     </Text>
